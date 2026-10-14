@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coeur chat</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: #000;
+      color: #00ff41;
+      font-family: "Courier New", monospace;
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 1.4rem;
+      border-bottom: 1px solid #00ff41;
+      padding-bottom: 8px;
+    }
+    h1::after { content: "_"; animation: blink 1s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #00ff41;
+      padding: 10px;
+    }
+    .msg { margin-bottom: 8px; word-wrap: break-word; }
+    .time { opacity: 0.5; font-size: 0.8rem; }
+    .name { font-weight: bold; }
+    form { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    input, button {
+      background: #000;
+      color: #00ff41;
+      border: 1px solid #00ff41;
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 10px;
+    }
+    input::placeholder { color: #00ff41; opacity: 0.5; }
+    input:focus { outline: 2px solid #00ff41; }
+    #name { width: 140px; }
+    #text { flex: 1; min-width: 150px; }
+    button { cursor: pointer; }
+    button:hover { background: #00ff41; color: #000; }
+  </style>
+</head>
+<body>
+  <h1>COEUR CHAT</h1>
+  <div id="messages"></div>
+  <form id="form">
+    <input id="name" placeholder="your name" maxlength="20" required>
+    <input id="text" placeholder="type a message..." maxlength="300" autocomplete="off" required>
+    <button type="submit">SEND</button>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded, query, limitToLast, serverTimestamp }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // PASTE YOUR FIREBASE CONFIG HERE (replace this whole block)
+    const firebaseConfig = {
+  apiKey: "AIzaSyDNadSDHQL0sbMkYemqV1B5GR93UYK_OdQ",
+  authDomain: "coeur-chat.firebaseapp.com",
+  databaseURL: "https://coeur-chat-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "coeur-chat",
+  storageBucket: "coeur-chat.firebasestorage.app",
+  messagingSenderId: "653354971086",
+  appId: "1:653354971086:web:3b98147d4a15d4619c459f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const messagesRef = ref(db, "messages");
+
+    const box = document.getElementById("messages");
+    const form = document.getElementById("form");
+    const nameInput = document.getElementById("name");
+    const textInput = document.getElementById("text");
+
+    nameInput.value = localStorage.getItem("coeur-name") || "";
+
+    // Show the last 100 messages, and new ones as they arrive
+    onChildAdded(query(messagesRef, limitToLast(100)), (snapshot) => {
+      const m = snapshot.val();
+      const div = document.createElement("div");
+      div.className = "msg";
+
+      const time = document.createElement("span");
+      time.className = "time";
+      time.textContent = "[" + new Date(m.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "] ";
+
+      const name = document.createElement("span");
+      name.className = "name";
+      name.textContent = m.name + "> ";
+
+      const text = document.createElement("span");
+      text.textContent = m.text;
+
+      div.append(time, name, text);
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = nameInput.value.trim();
+      const text = textInput.value.trim();
+      if (!name || !text) return;
+      localStorage.setItem("coeur-name", name);
+      push(messagesRef, { name, text, time: serverTimestamp() });
+      textInput.value = "";
+      textInput.focus();
+    });
+  </script>
+</body>
+</html>
